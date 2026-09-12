@@ -1,0 +1,1 @@
+window.__tv=window.__tv||{};window.__tv.hero='data:image/webp;base64,'+(window.__hero||'');window.__tv.about='data:image/webp;base64,'+(window.__about||'');
