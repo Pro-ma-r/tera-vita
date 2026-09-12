@@ -1,1 +1,5 @@
-(()=>{const i=window.__tv||{};for(const [id,key] of [["heroImage","hero"],["aboutImage","about"],["peopleImage","people"],["dogsImage","dogs"],["horsesImage","horses"],["triggerImage","trigger"]]){const el=document.getElementById(id);if(el&&i[key])el.src=i[key]}document.getElementById("demoForm")?.addEventListener("submit",e=>{e.preventDefault();const n=document.getElementById("previewNotice");n?.classList.add("show");n?.scrollIntoView({behavior:"smooth",block:"nearest"});setTimeout(()=>n?.classList.remove("show"),6000)})})();
+const menuButton = document.querySelector('.menu-toggle');
+const navigation = document.querySelector('.site-nav');
+menuButton?.addEventListener('click', () => { const open = navigation.classList.toggle('is-open'); menuButton.setAttribute('aria-expanded', String(open)); });
+navigation?.querySelectorAll('a').forEach((link) => link.addEventListener('click', () => { navigation.classList.remove('is-open'); menuButton?.setAttribute('aria-expanded', 'false'); }));
+document.querySelector('#demo-form')?.addEventListener('submit', (event) => { event.preventDefault(); document.querySelector('.form-result').textContent = 'Hvala! Ovo je demo obrazac — upit se još ne šalje dok se ne potvrdi adresa za primanje poruka.'; });
