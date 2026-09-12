@@ -1,0 +1,11 @@
+@media (min-width:721px){
+  .hero{
+    height:auto;
+    aspect-ratio:2.48 / 1;
+    background:var(--cream);
+  }
+  .hero-photo{
+    object-fit:contain;
+    object-position:center center;
+  }
+}
