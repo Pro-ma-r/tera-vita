@@ -1,3 +1,8 @@
+const heroFix = document.createElement('link');
+heroFix.rel = 'stylesheet';
+heroFix.href = '/hero-fix.css';
+document.head.appendChild(heroFix);
+
 const menuButton = document.querySelector('.menu-toggle');
 const navigation = document.querySelector('.site-nav');
 menuButton?.addEventListener('click', () => { const open = navigation.classList.toggle('is-open'); menuButton.setAttribute('aria-expanded', String(open)); });
