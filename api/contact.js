@@ -45,8 +45,9 @@ module.exports = async function handler(request, response) {
   const contact = cleanText(body.contact, 120);
   const service = cleanText(body.service, 40);
   const message = cleanText(body.message, 5000);
+  const privacyConsent = cleanText(body.privacyConsent, 10);
 
-  if (name.length < 2 || contact.length < 3 || message.length < 10 || !SERVICES.has(service)) {
+  if (name.length < 2 || contact.length < 3 || message.length < 10 || !SERVICES.has(service) || privacyConsent !== 'yes') {
     return response.status(400).json({ error: 'Provjerite unesene podatke i pokušajte ponovno.' });
   }
 

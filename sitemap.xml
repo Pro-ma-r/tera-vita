@@ -1,2 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>https://teravita.hr/</loc></url></urlset>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://teravita.hr/</loc></url>
+  <url><loc>https://teravita.hr/politika-privatnosti.html</loc></url>
+  <url><loc>https://teravita.hr/pravne-informacije.html</loc></url>
+</urlset>
