@@ -1,0 +1,7 @@
+{
+  "name": "tera-vita",
+  "private": true,
+  "dependencies": {
+    "resend": "^6.28.1"
+  }
+}

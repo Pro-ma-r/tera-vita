@@ -1,118 +1,111 @@
-module.exports = async function handler(req, res) {
-  if (req.method !== 'POST') {
-    res.setHeader('Allow', 'POST');
-    return res.status(405).json({ ok: false, error: 'Method not allowed' });
+const crypto = require('node:crypto');
+const { Resend } = require('resend');
+
+const SERVICES = new Set(['Za mene', 'Za psa', 'Za konja', 'Imam pitanje']);
+
+function cleanText(value, maxLength) {
+  return String(value ?? '').trim().slice(0, maxLength);
+}
+
+function escapeHtml(value) {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
+module.exports = async function handler(request, response) {
+  if (request.method !== 'POST') {
+    response.setHeader('Allow', 'POST');
+    return response.status(405).json({ error: 'Method not allowed' });
   }
 
-  const origin = req.headers.origin;
-  const host = req.headers.host;
+  const origin = request.headers.origin;
+  const host = request.headers.host;
   if (origin) {
     try {
       if (new URL(origin).host !== host) {
-        return res.status(403).json({ ok: false, error: 'Forbidden' });
+        return response.status(403).json({ error: 'Forbidden' });
       }
     } catch {
-      return res.status(403).json({ ok: false, error: 'Forbidden' });
+      return response.status(403).json({ error: 'Forbidden' });
     }
   }
 
-  const { name, contact, service, message, website } = req.body || {};
+  const body = request.body || {};
 
-  // Honeypot: bots often fill fields that real visitors never see.
-  if (website) {
-    return res.status(200).json({ ok: true });
+  // Hidden field: real visitors never fill this in.
+  if (cleanText(body.website, 200)) {
+    return response.status(200).json({ ok: true });
   }
 
-  const cleanName = String(name || '').trim();
-  const cleanContact = String(contact || '').trim();
-  const cleanService = String(service || '').trim();
-  const cleanMessage = String(message || '').trim();
+  const name = cleanText(body.name, 100);
+  const contact = cleanText(body.contact, 120);
+  const service = cleanText(body.service, 40);
+  const message = cleanText(body.message, 5000);
 
-  if (!cleanName || !cleanContact || !cleanMessage) {
-    return res.status(400).json({ ok: false, error: 'Nedostaju obavezni podaci.' });
+  if (name.length < 2 || contact.length < 3 || message.length < 10 || !SERVICES.has(service)) {
+    return response.status(400).json({ error: 'Provjerite unesene podatke i pokušajte ponovno.' });
   }
 
-  if (
-    cleanName.length > 120 ||
-    cleanContact.length > 180 ||
-    cleanService.length > 80 ||
-    cleanMessage.length > 5000
-  ) {
-    return res.status(400).json({ ok: false, error: 'Uneseni podaci su predugački.' });
+  if (!process.env.RESEND_API_KEY) {
+    console.error('[contact] Missing RESEND_API_KEY');
+    return response.status(503).json({ error: 'Slanje poruka trenutačno nije dostupno.' });
   }
 
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
-    console.error('RESEND_API_KEY is not configured.');
-    return res.status(500).json({ ok: false, error: 'Slanje poruke trenutačno nije dostupno.' });
-  }
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const replyTo = emailPattern.test(contact) ? contact : undefined;
+  const recipient = process.env.CONTACT_TO || 'info@teravita.hr';
+  const sender = process.env.RESEND_FROM || 'TERA VITA web <upiti@mail.teravita.hr>';
 
-  const to = process.env.CONTACT_TO || 'info@teravita.hr';
-  const from = process.env.CONTACT_FROM || 'TERA VITA <kontakt@teravita.hr>';
-  const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanContact);
-
-  const escapeHtml = (value) =>
-    value.replace(/[&<>"']/g, (char) => ({
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#039;'
-    })[char]);
-
-  const subject = `Novi upit s web stranice — ${cleanService || 'Kontakt'}`;
-  const text = [
-    'Novi upit s web stranice TERA VITA',
+  const plainText = [
+    'Novi upit s web-stranice TERA VITA',
     '',
-    `Ime i prezime: ${cleanName}`,
-    `Kontakt: ${cleanContact}`,
-    `Za koga je tretman: ${cleanService || '-'}`,
+    `Ime i prezime: ${name}`,
+    `Kontakt: ${contact}`,
+    `Za koga je tretman: ${service}`,
     '',
     'Poruka:',
-    cleanMessage
+    message,
   ].join('\n');
 
   const html = `
-    <h2>Novi upit s web stranice TERA VITA</h2>
-    <p><strong>Ime i prezime:</strong> ${escapeHtml(cleanName)}</p>
-    <p><strong>Kontakt:</strong> ${escapeHtml(cleanContact)}</p>
-    <p><strong>Za koga je tretman:</strong> ${escapeHtml(cleanService || '-')}</p>
-    <p><strong>Poruka:</strong></p>
-    <p style="white-space:pre-wrap">${escapeHtml(cleanMessage)}</p>
+    <div style="font-family:Arial,sans-serif;color:#24382d;line-height:1.6;max-width:640px">
+      <h1 style="font-family:Georgia,serif;color:#315642;font-size:26px">Novi upit s web-stranice</h1>
+      <p><strong>Ime i prezime:</strong> ${escapeHtml(name)}</p>
+      <p><strong>Kontakt:</strong> ${escapeHtml(contact)}</p>
+      <p><strong>Za koga je tretman:</strong> ${escapeHtml(service)}</p>
+      <p><strong>Poruka:</strong></p>
+      <p style="white-space:pre-wrap">${escapeHtml(message)}</p>
+    </div>
   `;
 
-  const payload = {
-    from,
-    to: [to],
-    subject,
-    text,
-    html
-  };
-
-  if (isEmail) {
-    payload.reply_to = cleanContact;
-  }
-
   try {
-    const resendResponse = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(payload)
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    const timeWindow = Math.floor(Date.now() / 600_000);
+    const idempotencyKey = crypto
+      .createHash('sha256')
+      .update(`${name}|${contact}|${service}|${message}|${timeWindow}`)
+      .digest('hex');
+
+    const { error } = await resend.emails.send({
+      from: sender,
+      to: [recipient],
+      replyTo,
+      subject: `Novi upit — ${service} — ${name}`,
+      text: plainText,
+      html,
+    }, {
+      idempotencyKey: `contact-${idempotencyKey}`,
     });
 
-    const resendBody = await resendResponse.json().catch(() => ({}));
+    if (error) throw new Error(error.message || 'Resend delivery failed');
 
-    if (!resendResponse.ok) {
-      console.error('Resend error:', resendResponse.status, resendBody);
-      return res.status(502).json({ ok: false, error: 'Poruku trenutačno nije moguće poslati.' });
-    }
-
-    return res.status(200).json({ ok: true });
+    return response.status(200).json({ ok: true });
   } catch (error) {
-    console.error('Contact form error:', error);
-    return res.status(500).json({ ok: false, error: 'Poruku trenutačno nije moguće poslati.' });
+    console.error('[contact] Email send failed', error);
+    return response.status(502).json({ error: 'Poruku trenutačno nije moguće poslati. Pokušajte ponovno ili se javite telefonom.' });
   }
 };

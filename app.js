@@ -31,30 +31,26 @@ contactForm?.addEventListener('submit', async (event) => {
   const submitButton = contactForm.querySelector('button[type="submit"]');
   const originalButtonText = submitButton?.textContent || 'Pošalji upit';
 
-  if (result) result.textContent = 'Šaljem poruku...';
+  if (result) result.textContent = '';
   if (submitButton) {
     submitButton.disabled = true;
     submitButton.textContent = 'Šaljem...';
   }
 
   try {
-    const payload = Object.fromEntries(new FormData(contactForm).entries());
     const response = await fetch('/api/contact', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(Object.fromEntries(new FormData(contactForm).entries())),
     });
 
-    const body = await response.json().catch(() => ({}));
-
-    if (!response.ok) {
-      throw new Error(body.error || 'Slanje nije uspjelo.');
-    }
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.error || 'Poruku trenutačno nije moguće poslati.');
 
     contactForm.reset();
-    if (result) result.textContent = 'Hvala! Vaš upit je poslan. Javit ćemo vam se čim prije.';
+    if (result) result.textContent = 'Hvala! Vaš je upit poslan. Javit ćemo vam se u najkraćem mogućem roku.';
   } catch (error) {
-    if (result) result.textContent = error?.message || 'Slanje nije uspjelo. Molimo pokušajte ponovno ili nam se javite telefonom/WhatsAppom.';
+    if (result) result.textContent = error.message || 'Došlo je do pogreške. Pokušajte ponovno ili se javite telefonom.';
   } finally {
     if (submitButton) {
       submitButton.disabled = false;
