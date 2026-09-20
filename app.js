@@ -22,4 +22,43 @@ document.querySelectorAll('.faq-list summary').forEach((summary) => {
     });
   });
 });
-document.querySelector('#demo-form')?.addEventListener('submit', (event) => { event.preventDefault(); document.querySelector('.form-result').textContent = 'Hvala! Ovo je demo obrazac — upit se još ne šalje dok se ne potvrdi adresa za primanje poruka.'; });
+
+const contactForm = document.querySelector('#contact-form');
+contactForm?.addEventListener('submit', async (event) => {
+  event.preventDefault();
+
+  const result = contactForm.querySelector('.form-result');
+  const submitButton = contactForm.querySelector('button[type="submit"]');
+  const originalButtonText = submitButton?.textContent || 'Pošalji upit';
+
+  if (result) result.textContent = 'Šaljem poruku...';
+  if (submitButton) {
+    submitButton.disabled = true;
+    submitButton.textContent = 'Šaljem...';
+  }
+
+  try {
+    const payload = Object.fromEntries(new FormData(contactForm).entries());
+    const response = await fetch('/api/contact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    const body = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(body.error || 'Slanje nije uspjelo.');
+    }
+
+    contactForm.reset();
+    if (result) result.textContent = 'Hvala! Vaš upit je poslan. Javit ćemo vam se čim prije.';
+  } catch (error) {
+    if (result) result.textContent = error?.message || 'Slanje nije uspjelo. Molimo pokušajte ponovno ili nam se javite telefonom/WhatsAppom.';
+  } finally {
+    if (submitButton) {
+      submitButton.disabled = false;
+      submitButton.textContent = originalButtonText;
+    }
+  }
+});
