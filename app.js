@@ -7,6 +7,21 @@ const menuButton = document.querySelector('.menu-toggle');
 const navigation = document.querySelector('.site-nav');
 menuButton?.addEventListener('click', () => { const open = navigation.classList.toggle('is-open'); menuButton.setAttribute('aria-expanded', String(open)); });
 navigation?.querySelectorAll('a').forEach((link) => link.addEventListener('click', () => { navigation.classList.remove('is-open'); menuButton?.setAttribute('aria-expanded', 'false'); }));
+document.querySelectorAll('[data-legal-modal]').forEach((link) => {
+  link.addEventListener('click', (event) => {
+    const dialog = document.getElementById(link.dataset.legalModal);
+    if (!(dialog instanceof HTMLDialogElement) || typeof dialog.showModal !== 'function') return;
+    event.preventDefault();
+    dialog.showModal();
+    dialog.querySelector('.legal-modal-scroll')?.scrollTo({ top: 0 });
+  });
+});
+document.querySelectorAll('.legal-modal').forEach((dialog) => {
+  dialog.querySelector('.modal-close')?.addEventListener('click', () => dialog.close());
+  dialog.addEventListener('click', (event) => {
+    if (event.target === dialog) dialog.close();
+  });
+});
 document.querySelectorAll('.faq-list summary').forEach((summary) => {
   summary.addEventListener('click', (event) => {
     event.preventDefault();
