@@ -12,6 +12,7 @@ document.querySelectorAll('[data-legal-modal]').forEach((link) => {
     const dialog = document.getElementById(link.dataset.legalModal);
     if (!(dialog instanceof HTMLDialogElement) || typeof dialog.showModal !== 'function') return;
     event.preventDefault();
+    document.documentElement.classList.add('modal-open');
     dialog.showModal();
     dialog.querySelector('.legal-modal-scroll')?.scrollTo({ top: 0 });
   });
@@ -21,6 +22,7 @@ document.querySelectorAll('.legal-modal').forEach((dialog) => {
   dialog.addEventListener('click', (event) => {
     if (event.target === dialog) dialog.close();
   });
+  dialog.addEventListener('close', () => document.documentElement.classList.remove('modal-open'));
 });
 document.querySelectorAll('.faq-list summary').forEach((summary) => {
   summary.addEventListener('click', (event) => {
